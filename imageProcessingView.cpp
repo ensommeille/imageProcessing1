@@ -515,7 +515,111 @@ void CimageProcessingView::OnImageprocessMedianfilter()
 	else if (BitCount == 24)
 	{
 		//处理彩色图像
-		AfxMessageBox("彩色图像处理有待实现");
+		unsigned char* redSeq = new unsigned char[n * n];
+		unsigned char* greenSeq = new unsigned char[n * n];
+		unsigned char* blueSeq = new unsigned char[n * n];
+		int mid = (n + 1) / 2;
+		int imageWidth = GetImageWidth(pFileBuf);
+		int imageHeight = GetImageHeight(pFileBuf);
+		//动态分配新的图片像素储存空间,存储计算后数据
+		char* NewP = new char[imageHeight * imageWidth * 3];
+
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				//对每个像素进行处理
+				memset(redSeq, 0, n * n);
+				memset(greenSeq, 0, n * n);
+				memset(blueSeq, 0, n * n);
+				int cnt = 0;
+				for (int i = 1; i <= n; i++)
+				{
+					for (int j = 1; j <= n; j++)
+					{
+						RGBQUAD rgb;
+						int x = w + (i - mid);
+						int y = h + (j - mid);
+						//超出边界的点使用中心值
+						if (x < 0 || x >= imageWidth || y < 0 || y >= imageHeight)
+							GetPixel(pFileBuf, w, h, &rgb, 0);
+						else GetPixel(pFileBuf, x, y, &rgb, 0);
+						redSeq[cnt] = rgb.rgbRed;
+						greenSeq[cnt] = rgb.rgbGreen;
+						blueSeq[cnt] = rgb.rgbBlue;
+						cnt++;
+					}
+				}
+
+				//对红、绿、蓝通道分别进行冒泡排序
+				unsigned char temp;
+				// 对红色通道排序
+				for (int i = 0; i < n * n - 1; i++)
+				{
+					for (int j = 0; j < n * n - i - 1; j++)
+					{
+						if (redSeq[j] > redSeq[j + 1])
+						{
+							temp = redSeq[j];
+							redSeq[j] = redSeq[j + 1];
+							redSeq[j + 1] = temp;
+						}
+					}
+				}
+				// 对绿色通道排序
+				for (int i = 0; i < n * n - 1; i++)
+				{
+					for (int j = 0; j < n * n - i - 1; j++)
+					{
+						if (greenSeq[j] > greenSeq[j + 1])
+						{
+							temp = greenSeq[j];
+							greenSeq[j] = greenSeq[j + 1];
+							greenSeq[j + 1] = temp;
+						}
+					}
+				}
+				// 对蓝色通道排序
+				for (int i = 0; i < n * n - 1; i++)
+				{
+					for (int j = 0; j < n * n - i - 1; j++)
+					{
+						if (blueSeq[j] > blueSeq[j + 1])
+						{
+							temp = blueSeq[j];
+							blueSeq[j] = blueSeq[j + 1];
+							blueSeq[j + 1] = temp;
+						}
+					}
+				}
+
+				//最终数据存入
+				int index = (h * imageWidth + w) * 3;
+				NewP[index] = redSeq[n * n / 2];
+				NewP[index + 1] = greenSeq[n * n / 2];
+				NewP[index + 2] = blueSeq[n * n / 2];
+			}
+		}
+
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				//将所有像素的计算值写回原处        
+				RGBQUAD rgb;
+				int index = (h * imageWidth + w) * 3;
+				rgb.rgbRed = NewP[index];
+				rgb.rgbGreen = NewP[index + 1];
+				rgb.rgbBlue = NewP[index + 2];
+				SetPixel(pFileBuf, w, h, rgb);
+			}
+		}
+
+		//释放空间
+		delete[] redSeq;
+		delete[] greenSeq;
+		delete[] blueSeq;
+		delete[] NewP;
 	}
 	Invalidate();
 	UpdateWindow();
@@ -647,12 +751,92 @@ void CimageProcessingView::OnImageprocessBilateralfilter()
 	else if (BitCount == 24)
 	{
 		//处理彩色图像
-		AfxMessageBox("彩色图像处理有待实现");
+		unsigned char* redSeq = new unsigned char[n * n];
+		unsigned char* greenSeq = new unsigned char[n * n];
+		unsigned char* blueSeq = new unsigned char[n * n];
+		int mid = (n + 1) / 2;
+		int imageWidth = GetImageWidth(pFileBuf);
+		int imageHeight = GetImageHeight(pFileBuf);
+		//动态分配新的图片像素储存空间,存储计算后数据
+		char* NewP = new char[imageHeight * imageWidth * 3];
+
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				//对每个像素进行处理
+				memset(redSeq, 0, n * n);
+				memset(greenSeq, 0, n * n);
+				memset(blueSeq, 0, n * n);
+				int cnt = 0;
+				for (int i = 1; i <= n; i++)
+				{
+					for (int j = 1; j <= n; j++)
+					{
+						RGBQUAD rgb;
+						int x = w + (i - mid);
+						int y = h + (j - mid);
+						//超出边界的点使用中心值
+						if (x < 0 || x >= imageWidth || y < 0 || y >= imageHeight)
+							GetPixel(pFileBuf, w, h, &rgb, 0);
+						else GetPixel(pFileBuf, x, y, &rgb, 0);
+						redSeq[cnt] = rgb.rgbRed;
+						greenSeq[cnt] = rgb.rgbGreen;
+						blueSeq[cnt] = rgb.rgbBlue;
+						cnt++;
+					}
+				}
+
+				//对红、绿、蓝通道分别进行冒泡排序
+				unsigned char temp;
+				for (int channel = 0; channel < 3; channel++)
+				{
+					unsigned char* seq = (channel == 0) ? redSeq : (channel == 1) ? greenSeq : blueSeq;
+					for (int i = 0; i < n * n - 1; i++)
+					{
+						for (int j = 0; j < n * n - i - 1; j++)
+						{
+							if (seq[j] > seq[j + 1])
+							{
+								temp = seq[j];
+								seq[j] = seq[j + 1];
+								seq[j + 1] = temp;
+							}
+						}
+					}
+				}
+
+				//最终数据存入
+				int index = (h * imageWidth + w) * 3;
+				NewP[index] = redSeq[n * n / 2];
+				NewP[index + 1] = greenSeq[n * n / 2];
+				NewP[index + 2] = blueSeq[n * n / 2];
+			}
+		}
+
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				//将所有像素的计算值写回原处		
+				RGBQUAD rgb;
+				int index = (h * imageWidth + w) * 3;
+				rgb.rgbRed = NewP[index];
+				rgb.rgbGreen = NewP[index + 1];
+				rgb.rgbBlue = NewP[index + 2];
+				SetPixel(pFileBuf, w, h, rgb);
+			}
+		}
+
+		//释放空间
+		delete[] redSeq;
+		delete[] greenSeq;
+		delete[] blueSeq;
+		delete[] NewP;
 	}
 	Invalidate();
 	UpdateWindow();
 	printf("双边滤波处理完毕\n");
-
 }
 
 //Histogram equalization
@@ -660,7 +844,7 @@ void CimageProcessingView::OnImageprocessHistoequalization()
 {
 	int BitCount = GetColorBits(pFileBuf);
 	if (BitCount == 8)
-	{
+	{		
 		//处理灰度图像
 		long cnt[256];//累计值数组,256个灰度级
 		double cntp[256];//累计百分比数组
@@ -709,7 +893,63 @@ void CimageProcessingView::OnImageprocessHistoequalization()
 	else if (BitCount == 24)
 	{
 		//处理彩色图像
-		AfxMessageBox("彩色图像处理有待实现");
+		int imageWidth = GetImageWidth(pFileBuf);
+		int imageHeight = GetImageHeight(pFileBuf);
+		long pixelNum = imageWidth * imageHeight;
+
+		// 分别处理红、绿、蓝通道
+		for (int channel = 0; channel < 3; channel++)
+		{
+			long cnt[256];//累计值数组,256个灰度级
+			double cntp[256];//累计百分比数组
+			memset(cnt, 0, 256 * sizeof(long));
+			memset(cntp, 0, 256 * sizeof(double));
+
+			// 统计每个通道的像素值
+			for (int w = 0; w < imageWidth; w++)
+			{
+				for (int h = 0; h < imageHeight; h++)
+				{
+					RGBQUAD rgb;
+					GetPixel(pFileBuf, w, h, &rgb, 0);
+					int value = (channel == 0) ? rgb.rgbRed : (channel == 1) ? rgb.rgbGreen : rgb.rgbBlue;
+					cnt[value]++;
+				}
+			}
+
+			// 计算累计百分比
+			for (int i = 0; i < 256; i++)
+			{
+				if (i >= 1) cnt[i] = cnt[i] + cnt[i - 1];
+				cntp[i] = (double)cnt[i] / (double)pixelNum;
+				printf("通道%d 灰度级%d累计百分比为%lf\n", channel, i, cntp[i]);
+			}
+
+			int f[256];//灰度级对应数组
+			memset(f, 0, 256 * sizeof(int));
+			for (int i = 0; i < 256; i++)
+			{
+				f[i] = (int)(255 * cntp[i] + 0.5);
+				printf("通道%d 灰度级%d对应至灰度级%d\n", channel, i, f[i]);
+			}
+
+			// 更新像素值
+			for (int w = 0; w < imageWidth; w++)
+			{
+				for (int h = 0; h < imageHeight; h++)
+				{
+					RGBQUAD rgb;
+					GetPixel(pFileBuf, w, h, &rgb, 0);
+					if (channel == 0)
+						rgb.rgbRed = f[rgb.rgbRed];
+					else if (channel == 1)
+						rgb.rgbGreen = f[rgb.rgbGreen];
+					else
+						rgb.rgbBlue = f[rgb.rgbBlue];
+					SetPixel(pFileBuf, w, h, rgb);
+				}
+			}
+		}
 	}
 	Invalidate();
 	UpdateWindow();
@@ -786,7 +1026,80 @@ void CimageProcessingView::OnImageprocessSharpengrad()
 	else if (BitCount == 24)
 	{
 		//处理彩色图像
-		AfxMessageBox("彩色图像处理有待实现");
+		// 动态分配新的图片像素储存空间,存储计算后数据
+		char* NewP = new char[imageHeight * imageWidth * 3]; // 3 个通道
+
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				// 顶侧和右侧两条边的临界值不处理
+				if (w + 1 < imageWidth && h + 1 < imageHeight)
+				{
+					// 处理红、绿、蓝三个通道
+					for (int channel = 0; channel < 3; channel++)
+					{
+						RGBQUAD rgb, rgbh1, rgbh2, rgbw1, rgbw2;
+						GetPixel(pFileBuf, w, h, &rgb, 0);
+						GetPixel(pFileBuf, w + 1, h, &rgbw1, 0);
+						GetPixel(pFileBuf, w - 1, h, &rgbw2, 0);
+						GetPixel(pFileBuf, w, h + 1, &rgbh1, 0);
+						GetPixel(pFileBuf, w, h - 1, &rgbh2, 0);
+
+						int value, valuew1, valuew2, valueh1, valueh2;
+						if (channel == 0)
+						{
+							value = rgb.rgbRed;
+							valuew1 = rgbw1.rgbRed;
+							valuew2 = rgbw2.rgbRed;
+							valueh1 = rgbh1.rgbRed;
+							valueh2 = rgbh2.rgbRed;
+						}
+						else if (channel == 1)
+						{
+							value = rgb.rgbGreen;
+							valuew1 = rgbw1.rgbGreen;
+							valuew2 = rgbw2.rgbGreen;
+							valueh1 = rgbh1.rgbGreen;
+							valueh2 = rgbh2.rgbGreen;
+						}
+						else
+						{
+							value = rgb.rgbBlue;
+							valuew1 = rgbw1.rgbBlue;
+							valuew2 = rgbw2.rgbBlue;
+							valueh1 = rgbh1.rgbBlue;
+							valueh2 = rgbh2.rgbBlue;
+						}
+
+						int deltaw = valuew1 + valuew2 - 2 * value;
+						int deltah = valueh1 + valueh2 - 2 * value;
+
+						double newpixel = sqrt((double)(deltah * deltah + deltaw * deltaw)) * k
+							+ (double)value * (1 - k);
+						if (newpixel > 255) newpixel = 255; // 上式计算的newpixel可能溢出
+						NewP[(h * imageWidth + w) * 3 + channel] = (int)newpixel;
+					}
+				}
+			}
+		}
+
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				// 将所有像素的计算值写回原处
+				RGBQUAD rgb;
+				rgb.rgbRed = NewP[(h * imageWidth + w) * 3 + 0];
+				rgb.rgbGreen = NewP[(h * imageWidth + w) * 3 + 1];
+				rgb.rgbBlue = NewP[(h * imageWidth + w) * 3 + 2];
+				SetPixel(pFileBuf, w, h, rgb);
+				//printf("(%d,%d)处像素值已修改为(%d,%d,%d)\n", w, h, rgb.rgbRed, rgb.rgbGreen, rgb.rgbBlue);
+			}
+		}
+
+		// 释放空间
+		delete[] NewP;
 	}
 	Invalidate();
 	UpdateWindow();
@@ -919,11 +1232,143 @@ void CimageProcessingView::OnImageprocessCannyedge()
 	else if (BitCount == 24)
 	{
 		//处理彩色图像
-		AfxMessageBox("彩色图像处理有待实现");
-	}
-	Invalidate();
-	UpdateWindow();
-	printf("边缘检测处理完毕\n");
+		// 先将彩色图像转换为灰度图像
+		char* grayImage = new char[imageHeight * imageWidth];
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				RGBQUAD rgb;
+				GetPixel(pFileBuf, w, h, &rgb, 0);
+				// 使用加权平均法将彩色图像转换为灰度图像
+				int grayValue = 0.299 * rgb.rgbRed + 0.587 * rgb.rgbGreen + 0.114 * rgb.rgbBlue;
+				grayImage[h * imageWidth + w] = grayValue;
+			}
+		}
+
+		// 将灰度图像数据复制到一个临时的文件缓冲区
+		char* tempFileBuf = new char[imageHeight * imageWidth];
+		memcpy(tempFileBuf, grayImage, imageHeight * imageWidth);
+
+		// 对灰度图像应用 Canny 边缘检测算法
+		int* Grad_x = new int[imageHeight * imageWidth];
+		int* Grad_y = new int[imageHeight * imageWidth];
+		double* G = new double[imageWidth * imageHeight];
+		int* D = new int[imageWidth * imageHeight];
+		char* NewP = new char[imageHeight * imageWidth];
+
+		int soble_x[3][3] = { -1,0,1,-2,0,2,-1,0,1 };
+		int soble_y[3][3] = { 1,2,1,0,0,0,-1,-2,-1 };
+
+		// 计算梯度
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				int Gx = 0;
+				int Gy = 0;
+				for (int i = 1; i <= 3; i++)
+				{
+					for (int j = 1; j <= 3; j++)
+					{
+						RGBQUAD rgb;
+						int x = w + (i - 2);
+						int y = h + (j - 2);
+						if (x < 0 || x >= imageWidth || y < 0 || y >= imageHeight)
+						{
+							rgb.rgbReserved = grayImage[h * imageWidth + w];
+						}
+						else
+						{
+							rgb.rgbReserved = grayImage[y * imageWidth + x];
+						}
+						Gx += rgb.rgbReserved * soble_x[i - 1][j - 1];
+						Gy += rgb.rgbReserved * soble_y[i - 1][j - 1];
+					}
+				}
+				Grad_x[h * imageWidth + w] = Gx;
+				Grad_y[h * imageWidth + w] = Gy;
+				G[h * imageWidth + w] = sqrt(Gx * Gx + Gy * Gy);
+				double t = atan2(Gy, Gx);
+				if ((t >= -pi / 8 && t < pi / 8) || (t < -pi * 7 / 8) || (t >= pi * 7 / 8))
+					D[h * imageWidth + w] = 1;
+				if ((t >= pi * 3 / 8 && t < pi * 5 / 8) || (t >= -pi * 5 / 8 && t < -pi * 3 / 8))
+					D[h * imageWidth + w] = 2;
+				if ((t >= pi / 8 && t < pi * 3 / 8) || (t >= -pi * 7 / 8 && t < -pi * 5 / 8))
+					D[h * imageWidth + w] = 3;
+				if ((t >= pi * 5 / 8 && t < pi * 7 / 8) || (t >= -pi * 3 / 8 && t < -pi / 8))
+					D[h * imageWidth + w] = 4;
+			}
+		}
+
+		// 非极大抑制
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				switch (D[h * imageWidth + w])
+				{
+				case 1:
+					if (w - 1 < 0 || w + 1 >= imageWidth) break;
+					if (G[h * imageWidth + w - 1] <= G[h * imageWidth + w] &&
+						G[h * imageWidth + w + 1] <= G[h * imageWidth + w])
+						NewP[h * imageWidth + w] = G[h * imageWidth + w];
+					else NewP[h * imageWidth + w] = 0;
+					break;
+				case 2:
+					if (h - 1 < 0 || h + 1 >= imageWidth) break;
+					if (G[(h - 1) * imageWidth + w] <= G[h * imageWidth + w] &&
+						G[(h + 1) * imageWidth + w] <= G[h * imageWidth + w])
+						NewP[h * imageWidth + w] = G[h * imageWidth + w];
+					else NewP[h * imageWidth + w] = 0;
+					break;
+				case 3:
+					if (w - 1 < 0 || w + 1 >= imageWidth) break;
+					if (h - 1 < 0 || h + 1 >= imageWidth) break;
+					if (G[(h + 1) * imageWidth + w - 1] <= G[h * imageWidth + w] &&
+						G[(h - 1) * imageWidth + w + 1] <= G[h * imageWidth + w])
+						NewP[h * imageWidth + w] = G[h * imageWidth + w];
+					else NewP[h * imageWidth + w] = 0;
+					break;
+				case 4:
+					if (w - 1 < 0 || w + 1 >= imageWidth) break;
+					if (h - 1 < 0 || h + 1 >= imageWidth) break;
+					if (G[(h - 1) * imageWidth + w - 1] <= G[h * imageWidth + w] &&
+						G[(h + 1) * imageWidth + w + 1] <= G[h * imageWidth + w])
+						NewP[h * imageWidth + w] = G[h * imageWidth + w];
+					else NewP[h * imageWidth + w] = 0;
+					break;
+				}
+			}
+		}
+
+		// 将结果写回原图像
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				RGBQUAD rgb;
+				if (NewP[h * imageWidth + w] > 255) rgb.rgbReserved = 255;
+				else rgb.rgbReserved = NewP[h * imageWidth + w];
+				rgb.rgbRed = rgb.rgbReserved;
+				rgb.rgbGreen = rgb.rgbReserved;
+				rgb.rgbBlue = rgb.rgbReserved;
+				SetPixel(pFileBuf, w, h, rgb);
+			}
+		}
+
+		// 释放空间
+		delete[] grayImage;
+		delete[] tempFileBuf;
+		delete[] Grad_x;
+		delete[] Grad_y;
+		delete[] G;
+		delete[] D;
+		delete[] NewP;
+		}
+		Invalidate();
+		UpdateWindow();
+		printf("边缘检测处理完毕\n");
 }
 
 //Otsu segmentation
@@ -1016,7 +1461,98 @@ void CimageProcessingView::OnImageprocessOtsusegment()
 	else if (BitCount == 24)
 	{
 		//处理彩色图像
-		AfxMessageBox("彩色图像处理有待实现");
+		// 方法1: 将彩色图像转换为灰度图像后应用Otsu算法
+		char* grayImage = new char[imageHeight * imageWidth];
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				RGBQUAD rgb;
+				GetPixel(pFileBuf, w, h, &rgb, 0);
+				// 使用加权平均法将彩色图像转换为灰度图像
+				int grayValue = (int)(0.299 * rgb.rgbRed + 0.587 * rgb.rgbGreen + 0.114 * rgb.rgbBlue);
+				grayImage[h * imageWidth + w] = grayValue;
+			}
+		}
+
+		// 对灰度图像应用Otsu算法
+		long cnt[256];
+		double cntp[256];
+		memset(cnt, 0, 256 * sizeof(long));
+		memset(cntp, 0, 256 * sizeof(double));
+		long pixelNum = imageWidth * imageHeight;
+
+		// 统计灰度图像像素数
+		for (int i = 0; i < pixelNum; i++)
+		{
+			cnt[(unsigned char)grayImage[i]]++;
+		}
+
+		// 计算百分比
+		double sum = 0;
+		for (int i = 0; i < 256; i++)
+		{
+			cntp[i] = (double)cnt[i] / (double)pixelNum;
+			sum += cntp[i] * i;
+		}
+
+		// 计算Otsu阈值
+		int final_k = 255;
+		double Ob = 0;
+		for (int k = 0; k < 256; k++)
+		{
+			double w1 = 0, w2 = 0;
+			for (int i = 0; i < 256; i++)
+			{
+				if (i <= k) w1 += cntp[i];
+				else w2 += cntp[i];
+			}
+
+			double u1 = 0, u2 = 0;
+			for (int i = 0; i < 256; i++)
+			{
+				if (i <= k && w1 != 0) u1 += i * cntp[i] / w1;
+				else if (i > k && w2 != 0) u2 += i * cntp[i] / w2;
+			}
+
+			double Ob_k = w1 * w2 * (u2 - u1) * (u2 - u1);
+			if (Ob_k > Ob)
+			{
+				Ob = Ob_k;
+				final_k = k;
+			}
+		}
+
+		// 应用阈值到彩色图像
+		for (int w = 0; w < imageWidth; w++)
+		{
+			for (int h = 0; h < imageHeight; h++)
+			{
+				RGBQUAD rgb;
+				GetPixel(pFileBuf, w, h, &rgb, 0);
+				// 使用转换后的灰度值进行二值化
+				int grayValue = (int)(0.299 * rgb.rgbRed + 0.587 * rgb.rgbGreen + 0.114 * rgb.rgbBlue);
+				if (grayValue <= final_k)
+				{
+					rgb.rgbRed = 0;
+					rgb.rgbGreen = 0;
+					rgb.rgbBlue = 0;
+				}
+				else
+				{
+					rgb.rgbRed = 255;
+					rgb.rgbGreen = 255;
+					rgb.rgbBlue = 255;
+				}
+				SetPixel(pFileBuf, w, h, rgb);
+			}
+		}
+
+		char msg[50];
+		sprintf(msg, "彩色图像Otsu阈值计算为为%d", final_k);
+		AfxMessageBox(msg);
+
+		delete[] grayImage;
 	}
 	Invalidate();
 	UpdateWindow();
